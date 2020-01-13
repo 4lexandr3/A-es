@@ -16,7 +16,7 @@ SELECT cd_acao, dt_pregao, vr_fechamento as cotacao, vr_volume, pc_variacao as p
      , case ic_1_00_pc when 1 then 'sim' else '' end _1_00
      , case ic_1_50_pc when 1 then 'sim' else '' end _1_50
      , case ic_2_00_pc when 1 then 'sim' else '' end _2_00
-	 , vr_result_1_00_pc as vr_1_00, vr_result_1_50_pc as vr_1_50, vr_result_2_00_pc as vr_2_00
+     , vr_result_1_00_pc as vr_1_00, vr_result_1_50_pc as vr_1_50, vr_result_2_00_pc as vr_2_00
 FROM hist_dados
 WHERE cd_acao LIKE 'PRIO3%'
 ORDER BY 2 DESC , 1 DESC
@@ -136,10 +136,11 @@ for i in listaAux:
             cur.execute(sql_insert, registroAcoes)
 
         except lite.Error as e:
-            con.commit()
-            print("Error {}:".format(e.args[0]))
-            print(registroAcoes)
-            sys.exit(1)
+            # con.commit()
+            # print("Error {}:".format(e.args[0]))
+            # print(registroAcoes)
+            # sys.exit(1)
+            x = x
 
     x+=1
 
@@ -148,3 +149,4 @@ if con:
     con.close()
 
 print("Carga concluída com sucesso!")
+print(x-1 + " registros incluídos")
