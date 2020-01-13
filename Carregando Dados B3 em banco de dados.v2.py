@@ -76,6 +76,7 @@ for i in lista:
 
 listaAux.sort(reverse=True)
 x = 0
+y = 0
 vrInvestimentoPadrao = 20000
 sql_insert = 'INSERT INTO hist_dados VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 
@@ -86,7 +87,7 @@ for i in listaAux:
     CODBDI = listaAux[x][22:24]
     if TIPREG == 1 and CODBDI == '02':
         cdAcao = listaAux[x][2:14]
-        dtPregao = listaAux[x][14:18] + "/" + listaAux[x][18:20] + "/" + listaAux[x][20:22]
+        dtPregao = listaAux[x][14:18] + "-" + listaAux[x][18:20] + "-" + listaAux[x][20:22]
         vrFechamento = float(listaAux[x][108:121]) / 100
         if TIPREGprox == 0:
             vrFechamentoAnt = 1
@@ -116,21 +117,11 @@ for i in listaAux:
         if ic_2_00_pc == 1: vrResult_2_00_pc = vrInvestimentoPadrao * 0.02
         else:               vrResult_2_00_pc = (vrInvestimentoPadrao * pcVariacao) / 100
 
-        registroAcoes = [cdAcao,
-                         dtPregao,
-                         vrFechamento,
-                         vrVolume,
-                         pcVariacao,
-                         vrMaximoDia,
-                         vrMinimoDia,
-                         pcMaximoDia,
-                         pcMinimoDia,
-                         ic_1_00_pc,
-                         ic_1_50_pc,
-                         ic_2_00_pc,
-                         vrResult_1_00_pc,
-                         vrResult_1_50_pc,
-                         vrResult_2_00_pc]
+        registroAcoes = [cdAcao, dtPregao, vrFechamento, vrVolume, pcVariacao,
+                         vrMaximoDia,  vrMinimoDia, pcMaximoDia, pcMinimoDia,
+                         ic_1_00_pc, ic_1_50_pc, ic_2_00_pc,
+                         vrResult_1_00_pc, vrResult_1_50_pc, vrResult_2_00_pc]
+        y+=1
 
         try:
             cur.execute(sql_insert, registroAcoes)
@@ -140,13 +131,15 @@ for i in listaAux:
             # print("Error {}:".format(e.args[0]))
             # print(registroAcoes)
             # sys.exit(1)
-            x = x
-
+            y-=1
     x+=1
 
 if con:
     con.commit()
     con.close()
 
-print("Carga concluída com sucesso!")
-print(x-1 + " registros incluídos")
+if y > 0:
+    print("\nCarga concluída com sucesso!")
+    print(str(y) + " registros incluídos.")
+else:
+    print("\nNão há registros para inclusão.")
