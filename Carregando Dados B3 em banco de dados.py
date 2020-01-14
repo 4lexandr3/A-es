@@ -7,9 +7,9 @@ import sys
 select cd_acao, sum(ic_1_00_pc), sum(ic_1_50_pc), sum(ic_2_00_pc), sum(vr_volume), sum(vr_result_1_00_pc), sum(vr_result_1_50_pc), sum(vr_result_2_00_pc)
 from hist_dados
 where dt_pregao in (select distinct dt_pregao from hist_dados
-                    order by 1 DESC	limit 20)
+                    order by 1 DESC	limit 25)
 group by cd_acao
-having sum(ic_1_00_pc) >= 16
+having sum(ic_1_00_pc) >= 24
 order by 5 DESC
 
 SELECT cd_acao, dt_pregao, vr_fechamento as cotacao, vr_volume, pc_variacao as percent, vr_maximo_dia as vr_max, vr_minimo_dia as vr_min, pc_maximo_dia as pc_max, pc_minimo_dia as pc_min
@@ -23,123 +23,142 @@ ORDER BY 2 DESC , 1 DESC
 """
 
 
-con = None
+def registros():
+    lista1 = ()
+    lista2 = ()
+    f = open("COTAHIST_A2019.TXT", "r")
+    if f.mode == 'r':
+        lista1 = f.readlines()
 
-try:
-    con = lite.connect('acoes.db')
-    cur = con.cursor()
-    cur.execute('SELECT SQLITE_VERSION()')
-    data = cur.fetchone()[0]
+    f = open("COTAHIST_A2020.TXT", "r")
+    if f.mode == 'r':
+        lista2 = f.readlines()
 
-    print("SQLite version: {}".format(data))
-    print("Processando...")
+    return lista1 + lista2
 
-    sqlcreate = 'CREATE TABLE IF NOT EXISTS hist_dados ' \
-                '(cd_acao VARCHAR(12), ' \
-                'dt_pregao VARCHAR(10), ' \
-                'vr_fechamento FLOAT, ' \
-                'vr_volume INTEGER, ' \
-                'pc_variacao FLOAT, ' \
-                'vr_maximo_dia FLOAT, ' \
-                'vr_minimo_dia FLOAT, ' \
-                'pc_maximo_dia FLOAT, ' \
-                'pc_minimo_dia FLOAT, ' \
-                'ic_1_00_pc INTEGER, ' \
-                'ic_1_50_pc INTEGER, ' \
-                'ic_2_00_pc INTEGER, ' \
-                'vr_result_1_00_pc FLOAT, ' \
-                'vr_result_1_50_pc FLOAT, ' \
-                'vr_result_2_00_pc FLOAT, ' \
-                'PRIMARY KEY (cd_acao, dt_pregao))'
 
-    cur.execute(sqlcreate)
+def conecta_db(con):
+    try:
+        cur = con.cursor()
+        cur.execute('SELECT SQLITE_VERSION()')
+        data = cur.fetchone()[0]
 
-except lite.Error as e:
-    print("Error {}:".format(e.args[0]))
-    sys.exit(1)
+        print("\n=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
+        print("SQLite version: {}".format(data))
+        print("Carga de dados históricos Bovespa")
+        print("Processando...")
 
-f = open("COTAHIST_A2019.TXT", "r")
-if f.mode == 'r':
-    lista1 = f.readlines()
+        sqlcreate = 'CREATE TABLE IF NOT EXISTS hist_dados ' \
+                    '(cd_acao VARCHAR(12), ' \
+                    'dt_pregao VARCHAR(10), ' \
+                    'vr_fechamento FLOAT, ' \
+                    'vr_volume INTEGER, ' \
+                    'pc_variacao FLOAT, ' \
+                    'vr_maximo_dia FLOAT, ' \
+                    'vr_minimo_dia FLOAT, ' \
+                    'pc_maximo_dia FLOAT, ' \
+                    'pc_minimo_dia FLOAT, ' \
+                    'ic_1_00_pc INTEGER, ' \
+                    'ic_1_50_pc INTEGER, ' \
+                    'ic_2_00_pc INTEGER, ' \
+                    'vr_result_1_00_pc FLOAT, ' \
+                    'vr_result_1_50_pc FLOAT, ' \
+                    'vr_result_2_00_pc FLOAT, ' \
+                    'PRIMARY KEY (cd_acao, dt_pregao))'
 
-f = open("COTAHIST_A2020.TXT", "r")
-if f.mode == 'r':
-    lista2 = f.readlines()
+        cur.execute(sqlcreate)
+        return cur
 
-lista = lista1 + lista2
+    except lite.Error as e:
+        print("Error {}:".format(e.args[0]))
+        sys.exit(1)
 
-x = 0
-listaAux = []
-for i in lista:
-    listaAux.append(lista[x][0:2] + lista[x][12:24] + lista[x][2:12] + lista[x][24:245])
-    x+=1
 
-listaAux.sort(reverse=True)
-x = 0
-y = 0
-vrInvestimentoPadrao = 20000
-sql_insert = 'INSERT INTO hist_dados VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+def formata_ordena_lista(lista):
+    lista_aux = []
+    for reg in lista:
+        lista_aux.append(reg[0:2] + reg[12:24] + reg[2:12] + reg[24:245])
+    lista_aux.sort(reverse=True)
 
-for i in listaAux:
-    TIPREG = int(listaAux[x][0:2])
-    if TIPREG == 1:
-        TIPREGprox = int(listaAux[x+1][0:2])
-    CODBDI = listaAux[x][22:24]
-    if TIPREG == 1 and CODBDI == '02':
-        cdAcao = listaAux[x][2:14]
-        dtPregao = listaAux[x][14:18] + "-" + listaAux[x][18:20] + "-" + listaAux[x][20:22]
-        vrFechamento = float(listaAux[x][108:121]) / 100
-        if TIPREGprox == 0:
-            vrFechamentoAnt = 1
-        else:
-            vrFechamentoAnt = float(listaAux[x+1][108:121]) / 100
-        vrVolume = float(listaAux[x][170:188]) / 100
-        pcVariacao = round(((vrFechamento / vrFechamentoAnt) - 1) * 100, 2)
-        vrMaximoDia = float(listaAux[x][69:82]) / 100
-        vrMinimoDia = float(listaAux[x][82:95]) / 100
-        pcMaximoDia = round(((vrMaximoDia / vrFechamentoAnt) - 1) * 100, 2)
-        pcMinimoDia = round(((vrMinimoDia / vrFechamentoAnt) - 1) * 100, 2)
-        if pcMaximoDia > 1: ic_1_00_pc = 1
-        else:               ic_1_00_pc = 0
+    return lista_aux
 
-        if pcMaximoDia > 1.5: ic_1_50_pc = 1
-        else:                 ic_1_50_pc = 0
 
-        if pcMaximoDia > 2: ic_2_00_pc = 1
-        else:               ic_2_00_pc = 0
+def main():
+    con = lite.connect('acoes.v3.db')
+    cur = conecta_db(con)
+    lista = registros()
+    lista_aux = formata_ordena_lista(lista)
 
-        if ic_1_00_pc == 1: vrResult_1_00_pc = vrInvestimentoPadrao * 0.01
-        else:               vrResult_1_00_pc = (vrInvestimentoPadrao * pcVariacao) / 100
+    x = 0
+    y = 0
+    vr_investimento_padrao = 20000
+    sql_insert = 'INSERT INTO hist_dados VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 
-        if ic_1_50_pc == 1: vrResult_1_50_pc = vrInvestimentoPadrao * 0.015
-        else:               vrResult_1_50_pc = (vrInvestimentoPadrao * pcVariacao) / 100
+    TIPREGprox = 0
+    for reg in lista_aux:
+        TIPREG = int(reg[0:2])
+        if TIPREG == 1:
+            TIPREGprox = int(lista_aux[x+1][0:2])
+        CODBDI = reg[22:24]
+        if TIPREG == 1 and CODBDI == '02':
+            cd_acao = reg[2:14]
+            dt_pregao = reg[14:18] + "-" + reg[18:20] + "-" + reg[20:22]
+            vr_fechamento = float(reg[108:121]) / 100
+            if TIPREGprox == 0:
+                vr_fechamento_ant = 1
+            else:
+                vr_fechamento_ant = float(lista_aux[x+1][108:121]) / 100
+            vr_volume = float(reg[170:188]) / 100
+            pc_variacao = round(((vr_fechamento / vr_fechamento_ant) - 1) * 100, 2)
+            vr_maximo_dia = float(reg[69:82]) / 100
+            vr_minimo_dia = float(reg[82:95]) / 100
+            pc_maximo_dia = round(((vr_maximo_dia / vr_fechamento_ant) - 1) * 100, 2)
+            pc_minimo_dia = round(((vr_minimo_dia / vr_fechamento_ant) - 1) * 100, 2)
+            if pc_maximo_dia > 1: ic_1_00_pc = 1
+            else:               ic_1_00_pc = 0
 
-        if ic_2_00_pc == 1: vrResult_2_00_pc = vrInvestimentoPadrao * 0.02
-        else:               vrResult_2_00_pc = (vrInvestimentoPadrao * pcVariacao) / 100
+            if pc_maximo_dia > 1.5: ic_1_50_pc = 1
+            else:                 ic_1_50_pc = 0
 
-        registroAcoes = [cdAcao, dtPregao, vrFechamento, vrVolume, pcVariacao,
-                         vrMaximoDia,  vrMinimoDia, pcMaximoDia, pcMinimoDia,
-                         ic_1_00_pc, ic_1_50_pc, ic_2_00_pc,
-                         vrResult_1_00_pc, vrResult_1_50_pc, vrResult_2_00_pc]
-        y+=1
+            if pc_maximo_dia > 2: ic_2_00_pc = 1
+            else:               ic_2_00_pc = 0
 
-        try:
-            cur.execute(sql_insert, registroAcoes)
+            if ic_1_00_pc == 1: vr_result_1_00_pc = vr_investimento_padrao * 0.01
+            else:               vr_result_1_00_pc = (vr_investimento_padrao * pc_variacao) / 100
 
-        except lite.Error as e:
-            # con.commit()
-            # print("Error {}:".format(e.args[0]))
-            # print(registroAcoes)
-            # sys.exit(1)
-            y-=1
-    x+=1
+            if ic_1_50_pc == 1: vr_result_1_50_pc = vr_investimento_padrao * 0.015
+            else:               vr_result_1_50_pc = (vr_investimento_padrao * pc_variacao) / 100
 
-if con:
-    con.commit()
-    con.close()
+            if ic_2_00_pc == 1: vr_result_2_00_pc = vr_investimento_padrao * 0.02
+            else:               vr_result_2_00_pc = (vr_investimento_padrao * pc_variacao) / 100
 
-if y > 0:
-    print("\nCarga concluída com sucesso!")
-    print(str(y) + " registros incluídos.")
-else:
-    print("\nNão há registros para inclusão.")
+            registro_acoes = [cd_acao, dt_pregao, vr_fechamento, vr_volume, pc_variacao,
+                              vr_maximo_dia,  vr_minimo_dia, pc_maximo_dia, pc_minimo_dia,
+                              ic_1_00_pc, ic_1_50_pc, ic_2_00_pc,
+                              vr_result_1_00_pc, vr_result_1_50_pc, vr_result_2_00_pc]
+            y += 1
+
+            try:
+                cur.execute(sql_insert, registro_acoes)
+
+            except lite.Error as e:
+                # print("Error {}:".format(e.args[0]))
+                # sys.exit(1)
+                y -= 1
+        x += 1
+
+    if con:
+        con.commit()
+        con.close()
+
+    if y > 0:
+        print("\nCarga concluída com sucesso!")
+        print(str(y) + " registros incluídos.")
+    else:
+        print("\nNão há registros para inclusão.")
+
+    print("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
+
+
+if __name__ == "__main__":
+    main()
