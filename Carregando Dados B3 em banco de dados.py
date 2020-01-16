@@ -13,16 +13,17 @@ having sum(ic_1_00_pc) >= 24
 order by 5 DESC
 
 SELECT cd_acao, dt_pregao, vr_fechamento as cotacao, vr_volume, pc_variacao as percent, vr_maximo_dia as vr_max, vr_minimo_dia as vr_min, pc_maximo_dia as pc_max, pc_minimo_dia as pc_min
-     , case ic_1_00_pc when 1 then 'sim' else '' end _1_00
-     , case ic_1_50_pc when 1 then 'sim' else '' end _1_50
-     , case ic_2_00_pc when 1 then 'sim' else '' end _2_00
+     , case ic_1_00_pc when 1 then 'sim' else '' end _1_00, case ic_1_50_pc when 1 then 'sim' else '' end _1_50
+     , case ic_2_00_pc when 1 then 'sim' else '' end _2_00, case ic_2_50_pc when 1 then 'sim' else '' end _2_50
+     , case ic_3_00_pc when 1 then 'sim' else '' end _3_00
      , vr_result_1_00_pc as vr_1_00, vr_result_1_50_pc as vr_1_50, vr_result_2_00_pc as vr_2_00
+     , vr_result_2_50_pc as vr_2_50, vr_result_3_00_pc as vr_3_00
 FROM hist_dados
 WHERE cd_acao LIKE 'PRIO3%'
 ORDER BY 2 DESC , 1 DESC
 """
 vr_investimento_padrao = 20000
-sql_insert = 'INSERT INTO hist_dados VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+sql_insert = 'INSERT INTO hist_dados VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 
 
 def registros(ano1, ano2):
@@ -63,9 +64,13 @@ def conecta_db(con):
                     'ic_1_00_pc INTEGER, ' \
                     'ic_1_50_pc INTEGER, ' \
                     'ic_2_00_pc INTEGER, ' \
+                    'ic_2_50_pc INTEGER, ' \
+                    'ic_3_00_pc INTEGER, ' \
                     'vr_result_1_00_pc FLOAT, ' \
                     'vr_result_1_50_pc FLOAT, ' \
                     'vr_result_2_00_pc FLOAT, ' \
+                    'vr_result_2_50_pc FLOAT, ' \
+                    'vr_result_3_00_pc FLOAT, ' \
                     'PRIMARY KEY (cd_acao, dt_pregao))'
 
         cur.execute(sqlcreate)
@@ -115,6 +120,16 @@ def registro_acoes(reg, lista_aux, TIPREGprox, x):
     else:
         ic_2_00_pc = 0
 
+    if pc_maximo_dia > 2.5:
+        ic_2_50_pc = 1
+    else:
+        ic_2_50_pc = 0
+
+    if pc_maximo_dia > 3:
+        ic_3_00_pc = 1
+    else:
+        ic_3_00_pc = 0
+
     if ic_1_00_pc == 1:
         vr_result_1_00_pc = vr_investimento_padrao * 0.01
     else:
@@ -130,10 +145,20 @@ def registro_acoes(reg, lista_aux, TIPREGprox, x):
     else:
         vr_result_2_00_pc = (vr_investimento_padrao * pc_variacao) / 100
 
+    if ic_2_50_pc == 1:
+        vr_result_2_50_pc = vr_investimento_padrao * 0.025
+    else:
+        vr_result_2_50_pc = (vr_investimento_padrao * pc_variacao) / 100
+
+    if ic_2_00_pc == 1:
+        vr_result_3_00_pc = vr_investimento_padrao * 0.03
+    else:
+        vr_result_3_00_pc = (vr_investimento_padrao * pc_variacao) / 100
+
     return [cd_acao, dt_pregao, vr_fechamento, vr_volume, pc_variacao,
             vr_maximo_dia, vr_minimo_dia, pc_maximo_dia, pc_minimo_dia,
-            ic_1_00_pc, ic_1_50_pc, ic_2_00_pc,
-            vr_result_1_00_pc, vr_result_1_50_pc, vr_result_2_00_pc]
+            ic_1_00_pc, ic_1_50_pc, ic_2_00_pc, ic_2_50_pc, ic_3_00_pc,
+            vr_result_1_00_pc, vr_result_1_50_pc, vr_result_2_00_pc, vr_result_2_50_pc, vr_result_3_00_pc]
 
 
 def main():
