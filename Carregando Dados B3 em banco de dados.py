@@ -4,23 +4,18 @@ import sqlite3 as lite
 import sys
 
 """"
-select cd_acao, sum(ic_1_00_pc), sum(ic_1_50_pc), sum(ic_2_00_pc), sum(vr_volume), sum(vr_result_1_00_pc), sum(vr_result_1_50_pc), sum(vr_result_2_00_pc)
-from hist_dados
-where dt_pregao in (select distinct dt_pregao from hist_dados
-                    order by 1 DESC	limit 25)
-group by cd_acao
-having sum(ic_1_00_pc) >= 24
-order by 5 DESC
+select cd_acao, sum(ic_1_00_pc), sum(ic_1_50_pc), sum(ic_2_00_pc), sum(vr_volume), sum(vr_result_1_00_pc), sum(vr_result_1_50_pc), sum(vr_result_2_00_pc) from hist_dados
+where dt_pregao in (select distinct dt_pregao 
+     from hist_dados order by 1 DESC limit 25)
+group by cd_acao having sum(ic_1_00_pc) >= 21 order by 5 DESC
 
-SELECT cd_acao, dt_pregao, vr_fechamento as cotacao, vr_volume, pc_variacao as percent, vr_maximo_dia as vr_max, vr_minimo_dia as vr_min, pc_maximo_dia as pc_max, pc_minimo_dia as pc_min
-     , case ic_1_00_pc when 1 then 'sim' else '' end _1_00, case ic_1_50_pc when 1 then 'sim' else '' end _1_50
-     , case ic_2_00_pc when 1 then 'sim' else '' end _2_00, case ic_2_50_pc when 1 then 'sim' else '' end _2_50
-     , case ic_3_00_pc when 1 then 'sim' else '' end _3_00
-     , vr_result_1_00_pc as vr_1_00, vr_result_1_50_pc as vr_1_50, vr_result_2_00_pc as vr_2_00
-     , vr_result_2_50_pc as vr_2_50, vr_result_3_00_pc as vr_3_00
-FROM hist_dados
-WHERE cd_acao LIKE 'PRIO3%'
-ORDER BY 2 DESC , 1 DESC
+SELECT cd_acao, dt_pregao, vr_fechamento as cotacao, vr_volume, pc_variacao as percent, vr_maximo_dia as vr_max, vr_minimo_dia as vr_min, pc_maximo_dia as pc_max, pc_minimo_dia as pc_min, ">", pc_abertura as abert, "<", case ic_1_00_pc when 1 then 'sim' else '' end _1_00, case ic_1_50_pc when 1 then 'sim' else '' end _1_50, case ic_2_00_pc when 1 then 'sim' else '' end _2_00, case ic_2_50_pc when 1 then 'sim' else '' end _2_50, case ic_3_00_pc when 1 then 'sim' else '' end _3_00, vr_result_1_00_pc as vr_1_00, vr_result_1_50_pc as vr_1_50, vr_result_2_00_pc as vr_2_00, vr_result_2_50_pc as vr_2_50, vr_result_3_00_pc as vr_3_00
+FROM hist_dados WHERE cd_acao LIKE 'RCSL4%' and  dt_pregao <> '2019-01-02' ORDER BY 2 DESC , 1 DESC
+
+SELECT cd_acao, avg(pc_abertura), AVG(vr_volume)
+FROM hist_dados where dt_pregao <> '2019-01-02'
+group by cd_acao having AVG(vr_volume) > 1000000
+order by 2 desc
 """
 vr_investimento_padrao = 20000
 sql_insert = 'INSERT INTO hist_dados VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
