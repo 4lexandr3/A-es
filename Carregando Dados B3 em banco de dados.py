@@ -23,7 +23,7 @@ WHERE cd_acao LIKE 'PRIO3%'
 ORDER BY 2 DESC , 1 DESC
 """
 vr_investimento_padrao = 20000
-sql_insert = 'INSERT INTO hist_dados VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+sql_insert = 'INSERT INTO hist_dados VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 
 
 def registros(ano1, ano2):
@@ -61,6 +61,7 @@ def conecta_db(con):
                     'vr_minimo_dia FLOAT, ' \
                     'pc_maximo_dia FLOAT, ' \
                     'pc_minimo_dia FLOAT, ' \
+                    'pc_abertura FLOAT, ' \
                     'ic_1_00_pc INTEGER, ' \
                     'ic_1_50_pc INTEGER, ' \
                     'ic_2_00_pc INTEGER, ' \
@@ -105,6 +106,8 @@ def registro_acoes(reg, lista_aux, TIPREGprox, x):
     vr_minimo_dia = float(reg[82:95]) / 100
     pc_maximo_dia = round(((vr_maximo_dia / vr_fechamento_ant) - 1) * 100, 2)
     pc_minimo_dia = round(((vr_minimo_dia / vr_fechamento_ant) - 1) * 100, 2)
+    vr_preco_abertura = float(reg[56:69]) / 100
+    pc_abertura = round(((vr_preco_abertura / vr_fechamento_ant) - 1) * 100, 2)
     if pc_maximo_dia > 1:
         ic_1_00_pc = 1
     else:
@@ -156,13 +159,13 @@ def registro_acoes(reg, lista_aux, TIPREGprox, x):
         vr_result_3_00_pc = (vr_investimento_padrao * pc_variacao) / 100
 
     return [cd_acao, dt_pregao, vr_fechamento, vr_volume, pc_variacao,
-            vr_maximo_dia, vr_minimo_dia, pc_maximo_dia, pc_minimo_dia,
+            vr_maximo_dia, vr_minimo_dia, pc_maximo_dia, pc_minimo_dia, pc_abertura,
             ic_1_00_pc, ic_1_50_pc, ic_2_00_pc, ic_2_50_pc, ic_3_00_pc,
             vr_result_1_00_pc, vr_result_1_50_pc, vr_result_2_00_pc, vr_result_2_50_pc, vr_result_3_00_pc]
 
 
 def main():
-    con = lite.connect('acoes.v3.db')
+    con = lite.connect('acoes.v4.db')
     cur = conecta_db(con)
     lista = registros(2019, 2020)
     lista_aux = formata_ordena_lista(lista)
